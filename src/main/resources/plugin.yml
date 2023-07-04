@@ -1,0 +1,5 @@
+name: $name
+main: ru.violence.posefix.Main
+version: $version
+api-version: '$apiVersion'
+depend: [ProtocolLib]
