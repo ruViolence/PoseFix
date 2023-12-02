@@ -2,7 +2,11 @@ package ru.violence.posefix;
 
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.events.*;
+import com.comphenix.protocol.events.ListenerOptions;
+import com.comphenix.protocol.events.ListenerPriority;
+import com.comphenix.protocol.events.PacketAdapter;
+import com.comphenix.protocol.events.PacketContainer;
+import com.comphenix.protocol.events.PacketEvent;
 import com.comphenix.protocol.reflect.StructureModifier;
 import com.comphenix.protocol.wrappers.WrappedDataValue;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -25,25 +29,33 @@ public class Main extends JavaPlugin {
 
         @Override
         public void onPacketSending(PacketEvent event) {
-            PacketContainer container = event.getPacket();
+            if (event.isCancelled()) return;
 
-            // If self entity
-            if (event.getPlayer().getEntityId() == container.getIntegers().read(0)) {
+            // Check if the entity is the player themselves
+            if (event.getPlayer().getEntityId() == event.getPacket().getIntegers().read(0)) {
+                PacketContainer container = event.getPacket().deepClone(); // Clone the packet
+
                 StructureModifier<List<WrappedDataValue>> modifier = container.getDataValueCollectionModifier();
 
                 List<WrappedDataValue> data = modifier.read(0);
-                // Remove pose data
+                boolean modified = false;
+
+                // Remove pose-related data
                 for (Iterator<WrappedDataValue> iterator = data.iterator(); iterator.hasNext(); ) {
                     if (iterator.next().getIndex() == 6) {
                         iterator.remove();
+                        modified = true;
                         break;
                     }
                 }
+
+                if (!modified) return;
 
                 if (data.isEmpty()) {
                     event.setCancelled(true);
                 } else {
                     modifier.write(0, data);
+                    event.setPacket(container);
                 }
             }
         }
